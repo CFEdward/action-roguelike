@@ -36,5 +36,8 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	URadialForceComponent* ForceComp;
+
+	UPROPERTY(EditAnywhere)
+	float Damage;
 	
 };

@@ -7,7 +7,8 @@
 #include "PhysicsEngine/RadialForceComponent.h"
 
 // Sets default values
-ASExplosiveBarrel::ASExplosiveBarrel()
+ASExplosiveBarrel::ASExplosiveBarrel() :
+	Damage(50.0f)
 {
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	RootComponent = MeshComp;
@@ -43,7 +44,7 @@ void ASExplosiveBarrel::OnActorHit(
 			Cast<USAttributeComponent>(OtherActor->GetComponentByClass(USAttributeComponent::StaticClass()));
 		AttributeComp && OtherActor)
 	{
-		AttributeComp->ApplyHealthChange(-50.0f);
+		AttributeComp->ApplyHealthChange(this, Damage);
 
 		Destroy();
 	}

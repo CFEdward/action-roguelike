@@ -60,6 +60,11 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ThisClass::PrimaryInteract);
 }
 
+void ASCharacter::HealSelf(const float Amount /* = 100 */)
+{
+	AttributeComp->ApplyHealthChange(this, Amount);
+}
+
 void ASCharacter::MoveForward(const float Value)
 {
 	FRotator ControlRot = GetControlRotation();

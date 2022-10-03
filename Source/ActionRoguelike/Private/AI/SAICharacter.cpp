@@ -6,10 +6,13 @@
 #include "AIController.h"
 #include "BrainComponent.h"
 #include "SAttributeComponent.h"
+#include "SWorldUserWidget.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Blueprint/UserWidget.h"
 #include "Perception/PawnSensingComponent.h"
 
-ASAICharacter::ASAICharacter()
+ASAICharacter::ASAICharacter() :
+	TimeToHitParamName("TimeToHit")
 {
 	PawnSensingComp = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("PawnSensingComp"));
 
@@ -26,35 +29,54 @@ void ASAICharacter::PostInitializeComponents()
 	AttributeComp->OnHealthChanged.AddDynamic(this, &ThisClass::OnHealthChanged);
 }
 
-void ASAICharacter::OnPawnSeen(APawn* Pawn)
+void ASAICharacter::SetTargetActor(AActor* NewTarget) const
 {
 	if (AAIController* AIC = Cast<AAIController>(GetController()))
 	{
-		UBlackboardComponent* BBComp = AIC->GetBlackboardComponent();
-
-		BBComp->SetValueAsObject("TargetActor", Pawn);
-
-		DrawDebugString(
-			GetWorld(),
-			GetActorLocation(),
-			"PLAYER SPOTTED",
-			nullptr,
-			FColor::White,
-			4.0f,
-			true
-		);
+		AIC->GetBlackboardComponent()->SetValueAsObject("TargetActor", NewTarget);
 	}
+}
+
+void ASAICharacter::OnPawnSeen(APawn* Pawn)
+{
+	SetTargetActor(Pawn);
+	
+	DrawDebugString(
+    	GetWorld(),
+    	GetActorLocation(),
+    	"PLAYER SPOTTED",
+    	nullptr,
+    	FColor::White,
+    	4.0f,
+    	true
+    );
 }
 
 void ASAICharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth, float Delta)
 {
 	if (Delta < 0.0f)
 	{
+		if (InstigatorActor != this)
+		{
+			SetTargetActor(InstigatorActor);
+		}
+
+		if (ActiveHealthBar == nullptr)
+		{
+			ActiveHealthBar = CreateWidget<USWorldUserWidget>(GetWorld(), HealthBarWidgetClass);
+            if (ActiveHealthBar)
+            {
+            	ActiveHealthBar->AttachedActor = this;
+            	ActiveHealthBar->AddToViewport();
+            }
+		}
+		
+		GetMesh()->SetScalarParameterValueOnMaterials(TimeToHitParamName, GetWorld()->TimeSeconds);
+		
 		if (NewHealth <= 0.0f)
 		{
 			// stop BT
-			AAIController* AIC = Cast<AAIController>(GetController());
-			if (AIC)
+			if (const AAIController* AIC = Cast<AAIController>(GetController()))
 			{
 				AIC->GetBrainComponent()->StopLogic("Killed");
 			}
